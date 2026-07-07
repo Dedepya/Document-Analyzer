@@ -5,9 +5,10 @@ const MODEL_NAME = "gemini-3-flash-preview";
 
 // Helper to get API client
 const getClient = () => {
-  const apiKey = process.env.API_KEY;
+  const localKey = typeof window !== 'undefined' ? localStorage.getItem("GEMINI_API_KEY") : null;
+  const apiKey = localKey || process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API Key not found in environment variables");
+    throw new Error("API Key not found. Please click the Settings/Key icon at the top right to configure your Google Gemini API key.");
   }
   return new GoogleGenAI({ apiKey });
 };

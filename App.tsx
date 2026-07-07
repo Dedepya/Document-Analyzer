@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import mammoth from 'mammoth';
+import { Key } from 'lucide-react';
 import { FileUploader } from './components/FileUploader';
 import { AnalysisResult } from './components/AnalysisResult';
 import { ChatInterface } from './components/ChatInterface';
@@ -13,6 +14,24 @@ const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<DocumentAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showFullImage, setShowFullImage] = useState(false);
+  
+  // API Key state for end-user deployment config
+  const [apiKey, setApiKey] = useState<string>(() => {
+    return localStorage.getItem("GEMINI_API_KEY") || "";
+  });
+  const [tempKey, setTempKey] = useState<string>("");
+  const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
+
+  const handleSaveKey = (key: string) => {
+    const cleanKey = key.trim();
+    if (cleanKey) {
+      localStorage.setItem("GEMINI_API_KEY", cleanKey);
+    } else {
+      localStorage.removeItem("GEMINI_API_KEY");
+    }
+    setApiKey(cleanKey);
+    setShowKeyModal(false);
+  };
 
   // Helper: Process different file types
   const processFile = async (file: File) => {
@@ -155,16 +174,32 @@ const App: React.FC = () => {
             DocuLens
           </h1>
         </div>
-        <div>
+        <div className="flex items-center gap-3">
            {uploadedFile && (
              <button 
                 onClick={handleReset}
-                className="text-sm font-medium text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1"
+                className="text-sm font-medium text-slate-500 hover:text-red-500 transition-colors flex items-center gap-1 mr-1"
              >
                <Icons.Close className="w-4 h-4" />
                Reset
              </button>
            )}
+           <button 
+              onClick={() => {
+                setTempKey(apiKey);
+                setShowKeyModal(true);
+              }}
+              className="px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors relative flex items-center gap-2 text-sm border border-slate-200 shadow-sm font-medium"
+              title="Configure API Key"
+           >
+              <Key className="w-3.5 h-3.5 text-indigo-500" />
+              <span>API Key</span>
+              {apiKey ? (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              ) : (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              )}
+           </button>
         </div>
       </header>
 
@@ -297,6 +332,73 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* API Key Configuration Modal */}
+      {showKeyModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                <Key className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Configure Gemini API Key</h3>
+                <p className="text-xs text-slate-500">Required to run document analysis & chat features</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-slate-600 leading-relaxed">
+                This client-side web application runs directly in your browser. Enter your personal Gemini API key below. Your key is stored safely on your own device in local storage and is never sent to any third-party server.
+              </p>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Gemini API Key
+                </label>
+                <input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={tempKey}
+                  onChange={(e) => setTempKey(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-inner"
+                />
+              </div>
+
+              <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs text-slate-500 flex items-start gap-2">
+                <Icons.Alert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <span>
+                  Don't have an API key? You can get a free one from the{' '}
+                  <a 
+                    href="https://aistudio.google.com/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 font-semibold hover:underline"
+                  >
+                    Google AI Studio console
+                  </a>.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setShowKeyModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSaveKey(tempKey)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
+                >
+                  <Icons.Check className="w-4 h-4" />
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
